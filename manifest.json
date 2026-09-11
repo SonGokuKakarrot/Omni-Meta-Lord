@@ -3,7 +3,11 @@
   "name": "Omni Meta Lord",
   "version": "1.0.0",
   "description": "Maximum mic gain for Messenger, Facebook & Instagram web calls. Loud, clear, raw voice on every call.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
   "host_permissions": [
     "*://*.messenger.com/*",
     "*://*.facebook.com/*",
@@ -16,11 +20,6 @@
     "default_popup": "popup.html",
     "default_title": "Omni Meta Lord"
   },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
   "content_scripts": [
     {
       "matches": [
@@ -28,7 +27,9 @@
         "*://*.facebook.com/*",
         "*://*.instagram.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start",
       "world": "ISOLATED"
     },
@@ -38,7 +39,9 @@
         "*://*.facebook.com/*",
         "*://*.instagram.com/*"
       ],
-      "js": ["inject.js"],
+      "js": [
+        "inject.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }
