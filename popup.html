@@ -16,7 +16,7 @@
     </div>
     <div>
       <h1>Omni Meta Lord</h1>
-      <p class="subtitle">Maximum Mic Gain Booster</p>
+      <p class="subtitle">Extreme Mic Booster v2</p>
     </div>
   </div>
 
@@ -35,57 +35,82 @@
 
   <div class="control-group">
     <div class="slider-row">
-      <span class="label-text">Gain Boost</span>
-      <span class="value-badge" id="gainValue">5.0x</span>
+      <span class="label-text">Voice Gain</span>
+      <span class="value-badge" id="gainValue">240x</span>
     </div>
-    <input type="range" id="gainSlider" min="1" max="20" step="0.5" value="5" class="slider" />
-    <div class="slider-labels">
-      <span>1x</span>
-      <span>20x</span>
+    <input type="range" id="gainSlider" min="1" max="500" step="1" value="240" class="slider" />
+    <div class="slider-labels"><span>1x</span><span>500x</span></div>
+  </div>
+
+  <div class="control-group">
+    <div class="slider-row">
+      <span class="label-text">Master Loudness</span>
+      <span class="value-badge" id="masterValue">1800x</span>
+    </div>
+    <input type="range" id="masterSlider" min="1" max="100000" step="500" value="1800" class="slider" />
+    <div class="slider-labels"><span>1x</span><span>100000x</span></div>
+  </div>
+
+  <div class="control-group">
+    <div class="slider-row">
+      <span class="label-text">Presence Boost</span>
+      <span class="value-badge" id="rageValue">1200%</span>
+    </div>
+    <input type="range" id="rageSlider" min="0" max="100000" step="500" value="1200" class="slider" />
+    <div class="slider-labels"><span>0%</span><span>100000%</span></div>
+  </div>
+
+  <div class="control-group enhanced-grid">
+    <div class="sub-field">
+      <div class="sub-lbl">Noise Gate <span id="gateValue">0%</span></div>
+      <input type="range" id="gateSlider" min="0" max="100" step="1" value="0" class="slider" />
+    </div>
+    <div class="sub-field">
+      <div class="sub-lbl">De-Esser <span id="deEssValue">0%</span></div>
+      <input type="range" id="deEssSlider" min="0" max="100" step="1" value="0" class="slider" />
+    </div>
+    <div class="sub-field">
+      <div class="sub-lbl">Bass Boost <span id="bassValue">0%</span></div>
+      <input type="range" id="bassSlider" min="0" max="100" step="1" value="0" class="slider" />
+    </div>
+    <div class="sub-field">
+      <div class="sub-lbl">Auto Level <span id="autoLevelValue">0%</span></div>
+      <input type="range" id="autoLevelSlider" min="0" max="100" step="1" value="0" class="slider" />
     </div>
   </div>
 
   <div class="control-group">
     <div class="slider-row">
-      <span class="label-text">High-Pass Filter</span>
-      <span class="value-badge" id="hpValue">80 Hz</span>
+      <span class="label-text">Stereo Width</span>
+      <span class="value-badge" id="stereoValue">1.15x</span>
     </div>
-    <input type="range" id="hpSlider" min="20" max="300" step="10" value="80" class="slider" />
-    <div class="slider-labels">
-      <span>20 Hz</span>
-      <span>300 Hz</span>
-    </div>
-  </div>
-
-  <div class="control-group toggles">
-    <label class="toggle-row small">
-      <span class="label-text">Compressor</span>
-      <input type="checkbox" id="compressorToggle" class="toggle" />
-      <span class="toggle-slider"></span>
-    </label>
-    <label class="toggle-row small">
-      <span class="label-text">Limiter</span>
-      <input type="checkbox" id="limiterToggle" class="toggle" />
-      <span class="toggle-slider"></span>
-    </label>
+    <input type="range" id="stereoSlider" min="0" max="2" step="0.05" value="1.15" class="slider" />
+    <div class="slider-labels"><span>0x</span><span>2x</span></div>
   </div>
 
   <div class="control-group">
-    <label class="toggle-row small">
-      <span class="label-text">Auto-Boost Every Call</span>
-      <input type="checkbox" id="autoBoostToggle" class="toggle" />
-      <span class="toggle-slider"></span>
-    </label>
+    <div class="slider-row">
+      <span class="label-text">Clarity Rate</span>
+      <span class="value-badge" id="bitrateValue">2500</span>
+    </div>
+    <input type="range" id="bitrateSlider" min="1" max="2500" step="1" value="2500" class="slider" />
+    <div class="slider-labels"><span>1</span><span>2500</span></div>
   </div>
 
-  <div class="info-box">
-    <p>Works on <strong>messenger.com</strong>, <strong>facebook.com</strong>, and <strong>instagram.com</strong> web calls. Join any audio or video call and your mic will be at maximum loudness automatically.</p>
+  <div class="boost-row">
+    <button class="boost-btn turbo" id="turboBtn">TURBO</button>
+    <button class="boost-btn ultra" id="ultraBtn">ULTRA</button>
   </div>
 
   <div class="preset-row">
     <button class="preset-btn" data-preset="balanced">Balanced</button>
     <button class="preset-btn" data-preset="loud">Loud</button>
     <button class="preset-btn" data-preset="max">Max</button>
+    <button class="preset-btn" data-preset="ultra">Ultra</button>
+  </div>
+
+  <div class="info-box">
+    <p>Works on <strong>messenger.com</strong>, <strong>facebook.com</strong>, and <strong>instagram.com</strong> web calls. The on-page control panel also appears on supported sites for real-time adjustments.</p>
   </div>
 
   <script src="popup.js"></script>
