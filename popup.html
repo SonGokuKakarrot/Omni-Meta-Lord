@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omni Meta Lord</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="header">
+    <div class="logo-ring">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L17 9L24 10L19 15L20 22L14 19L8 22L9 15L4 10L11 9L14 2Z"
+              fill="none" stroke="#00E5FF" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Omni Meta Lord</h1>
+      <p class="subtitle">Maximum Mic Gain Booster</p>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Checking…</span>
+  </div>
+
+  <div class="control-group">
+    <label class="toggle-row">
+      <span class="label-text">Master Boost</span>
+      <input type="checkbox" id="enabledToggle" class="toggle" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <div class="control-group">
+    <div class="slider-row">
+      <span class="label-text">Gain Boost</span>
+      <span class="value-badge" id="gainValue">5.0x</span>
+    </div>
+    <input type="range" id="gainSlider" min="1" max="20" step="0.5" value="5" class="slider" />
+    <div class="slider-labels">
+      <span>1x</span>
+      <span>20x</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <div class="slider-row">
+      <span class="label-text">High-Pass Filter</span>
+      <span class="value-badge" id="hpValue">80 Hz</span>
+    </div>
+    <input type="range" id="hpSlider" min="20" max="300" step="10" value="80" class="slider" />
+    <div class="slider-labels">
+      <span>20 Hz</span>
+      <span>300 Hz</span>
+    </div>
+  </div>
+
+  <div class="control-group toggles">
+    <label class="toggle-row small">
+      <span class="label-text">Compressor</span>
+      <input type="checkbox" id="compressorToggle" class="toggle" />
+      <span class="toggle-slider"></span>
+    </label>
+    <label class="toggle-row small">
+      <span class="label-text">Limiter</span>
+      <input type="checkbox" id="limiterToggle" class="toggle" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <div class="control-group">
+    <label class="toggle-row small">
+      <span class="label-text">Auto-Boost Every Call</span>
+      <input type="checkbox" id="autoBoostToggle" class="toggle" />
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <div class="info-box">
+    <p>Works on <strong>messenger.com</strong>, <strong>facebook.com</strong>, and <strong>instagram.com</strong> web calls. Join any audio or video call and your mic will be at maximum loudness automatically.</p>
+  </div>
+
+  <div class="preset-row">
+    <button class="preset-btn" data-preset="balanced">Balanced</button>
+    <button class="preset-btn" data-preset="loud">Loud</button>
+    <button class="preset-btn" data-preset="max">Max</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
