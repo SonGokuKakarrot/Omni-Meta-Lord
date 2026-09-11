@@ -2,9 +2,7 @@
 
 function updateBadge(enabled) {
   chrome.action.setBadgeText({ text: enabled ? 'ON' : 'OFF' });
-  chrome.action.setBadgeBackgroundColor({
-    color: enabled ? '#00E676' : '#3A3A3A'
-  });
+  chrome.action.setBadgeBackgroundColor({ color: enabled ? '#00E676' : '#3A3A3A' });
 }
 
 chrome.storage.sync.get({ enabled: true }, function (stored) {
@@ -26,6 +24,6 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
 
 chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason === 'install') {
-    console.log('Omni Meta Lord installed. Mic boost active on Messenger, Facebook, Instagram web calls.');
+    console.log('Omni Meta Lord v2 installed. Extreme mic boost active on Messenger, Facebook, Instagram web calls.');
   }
 });
