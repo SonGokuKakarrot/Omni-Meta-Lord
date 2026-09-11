@@ -1,35 +1,47 @@
-// Omni Meta Lord — popup control script
+// Omni Meta Lord — popup control script v2
 
 (function () {
   'use strict';
 
   const DEFAULTS = {
     enabled: true,
-    gain: 5.0,
-    highpass: 80,
-    compressor: true,
-    limiter: true,
-    autoBoost: true
+    clearGain: 240,
+    masterGain: 1800,
+    rageBoost: 1200,
+    bitrate: 2500,
+    stereoWidth: 1.15,
+    eq1: 4, eq2: 3, eq3: 5, eq4: 6, eq5: 4, eq6: 2,
+    noiseGate: 0,
+    deEss: 0,
+    bassBoost: 0,
+    autoLevel: 0,
+    turboActive: false,
+    ultraTurboActive: false
   };
 
   const PRESETS = {
-    balanced: { gain: 3.0, highpass: 80, compressor: true, limiter: true },
-    loud:     { gain: 8.0, highpass: 60, compressor: true, limiter: true },
-    max:      { gain: 15.0, highpass: 40, compressor: true, limiter: true }
+    balanced: { clearGain: 150, masterGain: 800, rageBoost: 500, bitrate: 2500, stereoWidth: 1.0, noiseGate: 20, deEss: 15, bassBoost: 10, autoLevel: 20 },
+    loud:     { clearGain: 300, masterGain: 3000, rageBoost: 2500, bitrate: 2500, stereoWidth: 1.2, noiseGate: 15, deEss: 20, bassBoost: 20, autoLevel: 30 },
+    max:      { clearGain: 450, masterGain: 8000, rageBoost: 5000, bitrate: 2500, stereoWidth: 1.4, noiseGate: 10, deEss: 25, bassBoost: 30, autoLevel: 40 },
+    ultra:    { clearGain: 500, masterGain: 50000, rageBoost: 50000, bitrate: 2500, stereoWidth: 1.6, noiseGate: 5, deEss: 30, bassBoost: 40, autoLevel: 50 }
   };
 
   let settings = Object.assign({}, DEFAULTS);
 
-  const enabledToggle = document.getElementById('enabledToggle');
-  const gainSlider = document.getElementById('gainSlider');
-  const gainValue = document.getElementById('gainValue');
-  const hpSlider = document.getElementById('hpSlider');
-  const hpValue = document.getElementById('hpValue');
-  const compressorToggle = document.getElementById('compressorToggle');
-  const limiterToggle = document.getElementById('limiterToggle');
-  const autoBoostToggle = document.getElementById('autoBoostToggle');
-  const statusDot = document.getElementById('statusDot');
-  const statusText = document.getElementById('statusText');
+  const $ = function (id) { return document.getElementById(id); };
+
+  const enabledToggle = $('enabledToggle');
+  const gainSlider = $('gainSlider'), gainValue = $('gainValue');
+  const masterSlider = $('masterSlider'), masterValue = $('masterValue');
+  const rageSlider = $('rageSlider'), rageValue = $('rageValue');
+  const bitrateSlider = $('bitrateSlider'), bitrateValue = $('bitrateValue');
+  const stereoSlider = $('stereoSlider'), stereoValue = $('stereoValue');
+  const gateSlider = $('gateSlider'), gateValue = $('gateValue');
+  const deEssSlider = $('deEssSlider'), deEssValue = $('deEssValue');
+  const bassSlider = $('bassSlider'), bassValue = $('bassValue');
+  const autoLevelSlider = $('autoLevelSlider'), autoLevelValue = $('autoLevelValue');
+  const turboBtn = $('turboBtn'), ultraBtn = $('ultraBtn');
+  const statusDot = $('statusDot'), statusText = $('statusText');
   const presetBtns = document.querySelectorAll('.preset-btn');
 
   chrome.storage.sync.get(DEFAULTS, function (stored) {
@@ -41,22 +53,34 @@
 
   function applyToUI() {
     enabledToggle.checked = settings.enabled;
-    gainSlider.value = settings.gain;
-    gainValue.textContent = settings.gain.toFixed(1) + 'x';
-    hpSlider.value = settings.highpass;
-    hpValue.textContent = settings.highpass + ' Hz';
-    compressorToggle.checked = settings.compressor;
-    limiterToggle.checked = settings.limiter;
-    autoBoostToggle.checked = settings.autoBoost;
+    gainSlider.value = settings.clearGain;
+    gainValue.textContent = settings.clearGain + 'x';
+    masterSlider.value = settings.masterGain;
+    masterValue.textContent = settings.masterGain + 'x';
+    rageSlider.value = settings.rageBoost;
+    rageValue.textContent = settings.rageBoost + '%';
+    bitrateSlider.value = settings.bitrate;
+    bitrateValue.textContent = settings.bitrate;
+    stereoSlider.value = settings.stereoWidth;
+    stereoValue.textContent = settings.stereoWidth.toFixed(2) + 'x';
+    gateSlider.value = settings.noiseGate;
+    gateValue.textContent = settings.noiseGate + '%';
+    deEssSlider.value = settings.deEss;
+    deEssValue.textContent = settings.deEss + '%';
+    bassSlider.value = settings.bassBoost;
+    bassValue.textContent = settings.bassBoost + '%';
+    autoLevelSlider.value = settings.autoLevel;
+    autoLevelValue.textContent = settings.autoLevel + '%';
+
+    turboBtn.classList.toggle('active', settings.turboActive);
+    ultraBtn.classList.toggle('active', settings.ultraTurboActive);
     updatePresetHighlight();
   }
 
   function updatePresetHighlight() {
     presetBtns.forEach(function (btn) {
-      const preset = PRESETS[btn.dataset.preset];
-      if (preset &&
-          preset.gain === settings.gain &&
-          preset.highpass === settings.highpass) {
+      var p = PRESETS[btn.dataset.preset];
+      if (p && p.clearGain === settings.clearGain && p.masterGain === settings.masterGain) {
         btn.classList.add('active');
       } else {
         btn.classList.remove('active');
@@ -71,30 +95,34 @@
         type: 'omni-settings',
         settings: settings
       }, function () {
-        if (chrome.runtime.lastError) {
-          updateStatus(false);
-        }
+        if (chrome.runtime.lastError) { updateStatus(false); }
       });
     });
   }
 
   function updateStatus() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      const url = tabs[0] ? tabs[0].url : '';
-      const supported = /messenger\.com|facebook\.com|instagram\.com/.test(url);
-
+      var url = tabs[0] ? tabs[0].url : '';
+      var supported = /messenger\.com|facebook\.com|instagram\.com/.test(url);
       if (!supported) {
-        statusDot.classList.remove('active');
+        statusDot.className = 'status-dot';
         statusText.textContent = 'Open Messenger, Facebook, or Instagram';
         return;
       }
-
-      if (settings.enabled) {
-        statusDot.classList.add('active');
-        statusText.textContent = 'Boosting mic — Gain: ' + settings.gain.toFixed(1) + 'x';
-      } else {
-        statusDot.classList.remove('active');
+      if (!settings.enabled) {
+        statusDot.className = 'status-dot';
         statusText.textContent = 'Boost disabled';
+        return;
+      }
+      if (settings.ultraTurboActive) {
+        statusDot.className = 'status-dot ultra';
+        statusText.textContent = 'ULTRA TURBO — Gain: ' + settings.clearGain + 'x';
+      } else if (settings.turboActive) {
+        statusDot.className = 'status-dot turbo';
+        statusText.textContent = 'TURBO — Gain: ' + settings.clearGain + 'x';
+      } else {
+        statusDot.className = 'status-dot active';
+        statusText.textContent = 'Boosting — Gain: ' + settings.clearGain + 'x';
       }
     });
   }
@@ -105,45 +133,51 @@
     updateStatus();
   }
 
-  enabledToggle.addEventListener('change', function () {
-    settings.enabled = enabledToggle.checked;
-    save();
-  });
+  // Sliders
+  enabledToggle.addEventListener('change', function () { settings.enabled = enabledToggle.checked; save(); });
 
-  gainSlider.addEventListener('input', function () {
-    settings.gain = parseFloat(gainSlider.value);
-    gainValue.textContent = settings.gain.toFixed(1) + 'x';
-    updatePresetHighlight();
-  });
+  gainSlider.addEventListener('input', function () { settings.clearGain = parseInt(gainSlider.value, 10); gainValue.textContent = settings.clearGain + 'x'; updatePresetHighlight(); });
   gainSlider.addEventListener('change', save);
+  masterSlider.addEventListener('input', function () { settings.masterGain = parseInt(masterSlider.value, 10); masterValue.textContent = settings.masterGain + 'x'; updatePresetHighlight(); });
+  masterSlider.addEventListener('change', save);
+  rageSlider.addEventListener('input', function () { settings.rageBoost = parseInt(rageSlider.value, 10); rageValue.textContent = settings.rageBoost + '%'; });
+  rageSlider.addEventListener('change', save);
+  bitrateSlider.addEventListener('input', function () { settings.bitrate = parseInt(bitrateSlider.value, 10); bitrateValue.textContent = settings.bitrate; });
+  bitrateSlider.addEventListener('change', save);
+  stereoSlider.addEventListener('input', function () { settings.stereoWidth = parseFloat(stereoSlider.value); stereoValue.textContent = settings.stereoWidth.toFixed(2) + 'x'; });
+  stereoSlider.addEventListener('change', save);
+  gateSlider.addEventListener('input', function () { settings.noiseGate = parseInt(gateSlider.value, 10); gateValue.textContent = settings.noiseGate + '%'; });
+  gateSlider.addEventListener('change', save);
+  deEssSlider.addEventListener('input', function () { settings.deEss = parseInt(deEssSlider.value, 10); deEssValue.textContent = settings.deEss + '%'; });
+  deEssSlider.addEventListener('change', save);
+  bassSlider.addEventListener('input', function () { settings.bassBoost = parseInt(bassSlider.value, 10); bassValue.textContent = settings.bassBoost + '%'; });
+  bassSlider.addEventListener('change', save);
+  autoLevelSlider.addEventListener('input', function () { settings.autoLevel = parseInt(autoLevelSlider.value, 10); autoLevelValue.textContent = settings.autoLevel + '%'; });
+  autoLevelSlider.addEventListener('change', save);
 
-  hpSlider.addEventListener('input', function () {
-    settings.highpass = parseInt(hpSlider.value, 10);
-    hpValue.textContent = settings.highpass + ' Hz';
-    updatePresetHighlight();
-  });
-  hpSlider.addEventListener('change', save);
-
-  compressorToggle.addEventListener('change', function () {
-    settings.compressor = compressorToggle.checked;
+  // Boost buttons
+  turboBtn.addEventListener('click', function () {
+    settings.turboActive = !settings.turboActive;
+    if (settings.turboActive) settings.ultraTurboActive = false;
+    turboBtn.classList.toggle('active', settings.turboActive);
+    ultraBtn.classList.remove('active');
     save();
   });
 
-  limiterToggle.addEventListener('change', function () {
-    settings.limiter = limiterToggle.checked;
+  ultraBtn.addEventListener('click', function () {
+    settings.ultraTurboActive = !settings.ultraTurboActive;
+    if (settings.ultraTurboActive) settings.turboActive = false;
+    ultraBtn.classList.toggle('active', settings.ultraTurboActive);
+    turboBtn.classList.remove('active');
     save();
   });
 
-  autoBoostToggle.addEventListener('change', function () {
-    settings.autoBoost = autoBoostToggle.checked;
-    save();
-  });
-
+  // Presets
   presetBtns.forEach(function (btn) {
     btn.addEventListener('click', function () {
-      const preset = PRESETS[btn.dataset.preset];
+      var preset = PRESETS[btn.dataset.preset];
       if (!preset) return;
-      settings = Object.assign(settings, preset);
+      Object.assign(settings, preset);
       applyToUI();
       save();
     });
