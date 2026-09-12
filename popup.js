@@ -1,129 +1,196 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+// Omni Meta Lord — popup control script v2
 
-body {
-  width: 340px;
-  background-color: #0A0E14;
-  background-image: linear-gradient(rgba(10, 14, 20, 0.74), rgba(10, 14, 20, 0.94)), var(--theme-gif), linear-gradient(145deg, #162536, #080B10);
-  background-size: cover;
-  background-position: center top;
-  background-attachment: fixed;
-  color: #E8EEF2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding: 16px;
-}
+(function () {
+  'use strict';
 
-.theme-hero {
-  height: 76px;
-  margin: -16px -16px 14px;
-  background-image: linear-gradient(180deg, rgba(10, 14, 20, 0.06), rgba(10, 14, 20, 0.96)), var(--theme-gif), linear-gradient(145deg, #193149, #0A0E14);
-  background-size: cover;
-  background-position: center 20%;
-  border-bottom: 1px solid rgba(116, 214, 255, 0.3);
-}
+  const themeAsset = 'assets/363bc7ce3c45ce75bd795bd0ab88d936.gif';
+  try {
+    fetch(chrome.runtime.getURL(themeAsset), { method: 'HEAD' })
+      .then(function (res) {
+        if (res.ok) {
+          document.body.style.setProperty('--theme-gif', `url("${chrome.runtime.getURL(themeAsset)}")`);
+        }
+      })
+      .catch(function () {});
+  } catch (e) {}
 
-.header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-.logo-ring {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: linear-gradient(135deg, #0D47A1, #003c8f);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
-}
-.header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; color: #FFFFFF; }
-.subtitle { font-size: 11px; color: #6B7A8A; margin-top: 2px; }
+  const DEFAULTS = {
+    enabled: true,
+    clearGain: 240,
+    masterGain: 1800,
+    rageBoost: 1200,
+    bitrate: 2500,
+    stereoWidth: 1.15,
+    eq1: 4, eq2: 3, eq3: 5, eq4: 6, eq5: 4, eq6: 2,
+    noiseGate: 0,
+    deEss: 0,
+    bassBoost: 0,
+    autoLevel: 0,
+    turboActive: false,
+    ultraTurboActive: false
+  };
 
-.status-bar {
-  display: flex; align-items: center; gap: 8px;
-  background: #111820; border: 1px solid #1A2330; border-radius: 10px;
-  padding: 10px 12px; margin-bottom: 14px;
-}
-.status-dot {
-  width: 10px; height: 10px; border-radius: 50%; background: #6B7A8A;
-  transition: all 0.3s ease;
-}
-.status-dot.active { background: #00E676; box-shadow: 0 0 8px rgba(0, 230, 118, 0.6); }
-.status-dot.ultra { background: #ff4fd8; box-shadow: 0 0 8px rgba(255, 79, 216, 0.6); }
-.status-dot.turbo { background: #ffaa00; box-shadow: 0 0 8px rgba(255, 170, 0, 0.6); }
-#statusText { font-size: 12px; color: #8B9BAE; }
+  const PRESETS = {
+    balanced: { clearGain: 150, masterGain: 800, rageBoost: 500, bitrate: 2500, stereoWidth: 1.0, noiseGate: 20, deEss: 15, bassBoost: 10, autoLevel: 20 },
+    loud:     { clearGain: 300, masterGain: 3000, rageBoost: 2500, bitrate: 2500, stereoWidth: 1.2, noiseGate: 15, deEss: 20, bassBoost: 20, autoLevel: 30 },
+    max:      { clearGain: 450, masterGain: 8000, rageBoost: 5000, bitrate: 2500, stereoWidth: 1.4, noiseGate: 10, deEss: 25, bassBoost: 30, autoLevel: 40 },
+    ultra:    { clearGain: 500, masterGain: 50000, rageBoost: 50000, bitrate: 2500, stereoWidth: 1.6, noiseGate: 5, deEss: 30, bassBoost: 40, autoLevel: 50 }
+  };
 
-.control-group {
-  background: rgba(17, 24, 32, 0.88); border: 1px solid #1A2330; border-radius: 10px;
-  padding: 12px; margin-bottom: 10px;
-}
+  let settings = Object.assign({}, DEFAULTS);
 
-.toggle-row { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-.label-text { font-size: 13px; font-weight: 500; color: #C8D3DE; }
-.value-badge {
-  font-size: 12px; font-weight: 700; color: #00E5FF;
-  background: rgba(0, 229, 255, 0.08); padding: 2px 8px; border-radius: 6px;
-}
+  const $ = function (id) { return document.getElementById(id); };
 
-.toggle {
-  appearance: none; -webkit-appearance: none;
-  width: 40px; height: 22px; background: #1A2330; border-radius: 11px;
-  position: relative; cursor: pointer; transition: background 0.25s ease; flex-shrink: 0;
-}
-.toggle:checked { background: #003c8f; }
-.toggle-slider { display: none; }
-.toggle::after {
-  content: ''; position: absolute; top: 2px; left: 2px;
-  width: 18px; height: 18px; background: #5A6B7E; border-radius: 50%; transition: all 0.25s ease;
-}
-.toggle:checked::after { left: 20px; background: #00E5FF; box-shadow: 0 0 6px rgba(0, 229, 255, 0.5); }
+  const enabledToggle = $('enabledToggle');
+  const gainSlider = $('gainSlider'), gainValue = $('gainValue');
+  const masterSlider = $('masterSlider'), masterValue = $('masterValue');
+  const rageSlider = $('rageSlider'), rageValue = $('rageValue');
+  const bitrateSlider = $('bitrateSlider'), bitrateValue = $('bitrateValue');
+  const stereoSlider = $('stereoSlider'), stereoValue = $('stereoValue');
+  const gateSlider = $('gateSlider'), gateValue = $('gateValue');
+  const deEssSlider = $('deEssSlider'), deEssValue = $('deEssValue');
+  const bassSlider = $('bassSlider'), bassValue = $('bassValue');
+  const autoLevelSlider = $('autoLevelSlider'), autoLevelValue = $('autoLevelValue');
+  const turboBtn = $('turboBtn'), ultraBtn = $('ultraBtn');
+  const statusDot = $('statusDot'), statusText = $('statusText');
+  const presetBtns = document.querySelectorAll('.preset-btn');
 
-.slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.slider {
-  -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-  background: #1A2330; border-radius: 2px; outline: none; margin: 4px 0;
-}
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
-  border-radius: 50%; background: #00E5FF; cursor: pointer;
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.4); border: 2px solid #0A0E14;
-}
-.slider::-moz-range-thumb {
-  width: 16px; height: 16px; border-radius: 50%; background: #00E5FF;
-  cursor: pointer; border: 2px solid #0A0E14;
-}
-.slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: #4A5A6E; margin-top: 2px; }
+  chrome.storage.sync.get(DEFAULTS, function (stored) {
+    settings = Object.assign({}, DEFAULTS, stored);
+    applyToUI();
+    sendToTab();
+    updateStatus();
+  });
 
-.enhanced-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;
-}
-.sub-field { }
-.sub-lbl {
-  display: flex; justify-content: space-between; font-size: 10px; color: #ccc;
-  margin-bottom: 3px; font-weight: 600;
-}
-.sub-lbl span { color: #00E5FF; }
+  function applyToUI() {
+    enabledToggle.checked = settings.enabled;
+    gainSlider.value = settings.clearGain;
+    gainValue.textContent = settings.clearGain + 'x';
+    masterSlider.value = settings.masterGain;
+    masterValue.textContent = settings.masterGain + 'x';
+    rageSlider.value = settings.rageBoost;
+    rageValue.textContent = settings.rageBoost + '%';
+    bitrateSlider.value = settings.bitrate;
+    bitrateValue.textContent = settings.bitrate;
+    stereoSlider.value = settings.stereoWidth;
+    stereoValue.textContent = settings.stereoWidth.toFixed(2) + 'x';
+    gateSlider.value = settings.noiseGate;
+    gateValue.textContent = settings.noiseGate + '%';
+    deEssSlider.value = settings.deEss;
+    deEssValue.textContent = settings.deEss + '%';
+    bassSlider.value = settings.bassBoost;
+    bassValue.textContent = settings.bassBoost + '%';
+    autoLevelSlider.value = settings.autoLevel;
+    autoLevelValue.textContent = settings.autoLevel + '%';
 
-.boost-row { display: flex; gap: 8px; margin-bottom: 10px; }
-.boost-btn {
-  flex: 1; padding: 10px 0; background: #111820; border: 1px solid #1A2330;
-  border-radius: 10px; color: #8B9BAE; font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: all 0.2s ease;
-}
-.boost-btn:hover { border-color: #003c8f; color: #00E5FF; }
-.boost-btn.turbo.active {
-  background: #ffaa00; border-color: #ffaa00; color: #000;
-  box-shadow: 0 0 12px rgba(255, 170, 0, 0.5);
-}
-.boost-btn.ultra.active {
-  background: #ff4fd8; border-color: #ff4fd8; color: #fff;
-  box-shadow: 0 0 14px rgba(255, 79, 216, 0.5);
-}
+    turboBtn.classList.toggle('active', settings.turboActive);
+    ultraBtn.classList.toggle('active', settings.ultraTurboActive);
+    updatePresetHighlight();
+  }
 
-.preset-row { display: flex; gap: 6px; margin-bottom: 10px; }
-.preset-btn {
-  flex: 1; padding: 8px 0; background: #111820; border: 1px solid #1A2330;
-  border-radius: 8px; color: #8B9BAE; font-size: 11px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s ease;
-}
-.preset-btn:hover { background: #16202B; border-color: #003c8f; color: #00E5FF; }
-.preset-btn.active { background: #003c8f; border-color: #00E5FF; color: #FFFFFF; }
+  function updatePresetHighlight() {
+    presetBtns.forEach(function (btn) {
+      var p = PRESETS[btn.dataset.preset];
+      if (p && p.clearGain === settings.clearGain && p.masterGain === settings.masterGain) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
 
-.info-box {
-  background: rgba(0, 60, 143, 0.18); border: 1px solid rgba(0, 60, 143, 0.3);
-  border-radius: 10px; padding: 10px 12px;
-}
-.info-box p { font-size: 11px; line-height: 1.5; color: #7B8BA0; }
-.info-box strong { color: #A0B4C8; }
+  function sendToTab() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs[0]) return;
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: 'omni-settings',
+        settings: settings
+      }, function () {
+        if (chrome.runtime.lastError) { updateStatus(false); }
+      });
+    });
+  }
+
+  function updateStatus() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      var url = tabs[0] ? tabs[0].url : '';
+      var supported = /instagram\.com|whatsapp\.com|imo\.im|messenger\.com|facebook\.com|discord\.com|telegram\.org|webogram\.org|telegram\.im|tlgrm\.ru|tel\.onl/.test(url);
+      if (!supported) {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Open a supported web call site';
+        return;
+      }
+      if (!settings.enabled) {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Boost disabled';
+        return;
+      }
+      if (settings.ultraTurboActive) {
+        statusDot.className = 'status-dot ultra';
+        statusText.textContent = 'ULTRA TURBO — Gain: ' + settings.clearGain + 'x';
+      } else if (settings.turboActive) {
+        statusDot.className = 'status-dot turbo';
+        statusText.textContent = 'TURBO — Gain: ' + settings.clearGain + 'x';
+      } else {
+        statusDot.className = 'status-dot active';
+        statusText.textContent = 'Boosting — Gain: ' + settings.clearGain + 'x';
+      }
+    });
+  }
+
+  function save() {
+    chrome.storage.sync.set(settings, function () {});
+    sendToTab();
+    updateStatus();
+  }
+
+  // Sliders
+  enabledToggle.addEventListener('change', function () { settings.enabled = enabledToggle.checked; save(); });
+
+  gainSlider.addEventListener('input', function () { settings.clearGain = parseInt(gainSlider.value, 10); gainValue.textContent = settings.clearGain + 'x'; updatePresetHighlight(); });
+  gainSlider.addEventListener('change', save);
+  masterSlider.addEventListener('input', function () { settings.masterGain = parseInt(masterSlider.value, 10); masterValue.textContent = settings.masterGain + 'x'; updatePresetHighlight(); });
+  masterSlider.addEventListener('change', save);
+  rageSlider.addEventListener('input', function () { settings.rageBoost = parseInt(rageSlider.value, 10); rageValue.textContent = settings.rageBoost + '%'; });
+  rageSlider.addEventListener('change', save);
+  bitrateSlider.addEventListener('input', function () { settings.bitrate = parseInt(bitrateSlider.value, 10); bitrateValue.textContent = settings.bitrate; });
+  bitrateSlider.addEventListener('change', save);
+  stereoSlider.addEventListener('input', function () { settings.stereoWidth = parseFloat(stereoSlider.value); stereoValue.textContent = settings.stereoWidth.toFixed(2) + 'x'; });
+  stereoSlider.addEventListener('change', save);
+  gateSlider.addEventListener('input', function () { settings.noiseGate = parseInt(gateSlider.value, 10); gateValue.textContent = settings.noiseGate + '%'; });
+  gateSlider.addEventListener('change', save);
+  deEssSlider.addEventListener('input', function () { settings.deEss = parseInt(deEssSlider.value, 10); deEssValue.textContent = settings.deEss + '%'; });
+  deEssSlider.addEventListener('change', save);
+  bassSlider.addEventListener('input', function () { settings.bassBoost = parseInt(bassSlider.value, 10); bassValue.textContent = settings.bassBoost + '%'; });
+  bassSlider.addEventListener('change', save);
+  autoLevelSlider.addEventListener('input', function () { settings.autoLevel = parseInt(autoLevelSlider.value, 10); autoLevelValue.textContent = settings.autoLevel + '%'; });
+  autoLevelSlider.addEventListener('change', save);
+
+  // Boost buttons
+  turboBtn.addEventListener('click', function () {
+    settings.turboActive = !settings.turboActive;
+    if (settings.turboActive) settings.ultraTurboActive = false;
+    turboBtn.classList.toggle('active', settings.turboActive);
+    ultraBtn.classList.remove('active');
+    save();
+  });
+
+  ultraBtn.addEventListener('click', function () {
+    settings.ultraTurboActive = !settings.ultraTurboActive;
+    if (settings.ultraTurboActive) settings.turboActive = false;
+    ultraBtn.classList.toggle('active', settings.ultraTurboActive);
+    turboBtn.classList.remove('active');
+    save();
+  });
+
+  // Presets
+  presetBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var preset = PRESETS[btn.dataset.preset];
+      if (!preset) return;
+      Object.assign(settings, preset);
+      applyToUI();
+      save();
+    });
+  });
+})();
