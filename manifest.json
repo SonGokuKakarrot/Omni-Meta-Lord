@@ -1,17 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Omni Meta Lord — Extreme Mic Booster",
-  "version": "2.0.0",
-  "description": "Maximum mic loudness & enhancement for Messenger, Facebook & Instagram web calls. AudioWorklet processing, 6-band EQ, stereo widening, noise gate, de-esser, bass boost, auto-leveling & ultra turbo.",
+  "version": "2.1.0",
+  "description": "Maximum mic loudness and enhancement for supported Messenger, Facebook, Instagram, Discord, WhatsApp, Telegram, and imo web calls.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
-    "*://*.messenger.com/*",
-    "*://*.facebook.com/*",
-    "*://*.instagram.com/*"
+    "*://www.instagram.com/*", "*://*.instagram.com/*", "*://instagram.com/*",
+    "*://web.whatsapp.com/*", "*://*.whatsapp.com/*",
+    "*://web.imo.im/*", "*://*.imo.im/*",
+    "*://www.messenger.com/*", "*://*.messenger.com/*", "*://messenger.com/*",
+    "*://www.facebook.com/*", "*://*.facebook.com/*", "*://facebook.com/*",
+    "*://discord.com/*", "*://*.discord.com/*",
+    "*://web.telegram.org/*", "*://*.telegram.org/*",
+    "*://webogram.org/*", "*://*.webogram.org/*",
+    "*://web.telegram.im/*", "*://*.telegram.im/*",
+    "*://web.tlgrm.ru/*", "*://*.tlgrm.ru/*",
+    "*://web.tel.onl/*", "*://*.tel.onl/*"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
+  "background": { "service_worker": "background.js" },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Omni Meta Lord"
@@ -24,9 +30,17 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.messenger.com/*",
-        "*://*.facebook.com/*",
-        "*://*.instagram.com/*"
+        "*://www.instagram.com/*", "*://*.instagram.com/*", "*://instagram.com/*",
+        "*://web.whatsapp.com/*", "*://*.whatsapp.com/*",
+        "*://web.imo.im/*", "*://*.imo.im/*",
+        "*://www.messenger.com/*", "*://*.messenger.com/*", "*://messenger.com/*",
+        "*://www.facebook.com/*", "*://*.facebook.com/*", "*://facebook.com/*",
+        "*://discord.com/*", "*://*.discord.com/*",
+        "*://web.telegram.org/*", "*://*.telegram.org/*",
+        "*://webogram.org/*", "*://*.webogram.org/*",
+        "*://web.telegram.im/*", "*://*.telegram.im/*",
+        "*://web.tlgrm.ru/*", "*://*.tlgrm.ru/*",
+        "*://web.tel.onl/*", "*://*.tel.onl/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start",
@@ -34,13 +48,27 @@
     },
     {
       "matches": [
-        "*://*.messenger.com/*",
-        "*://*.facebook.com/*",
-        "*://*.instagram.com/*"
+        "*://www.instagram.com/*", "*://*.instagram.com/*", "*://instagram.com/*",
+        "*://web.whatsapp.com/*", "*://*.whatsapp.com/*",
+        "*://web.imo.im/*", "*://*.imo.im/*",
+        "*://www.messenger.com/*", "*://*.messenger.com/*", "*://messenger.com/*",
+        "*://www.facebook.com/*", "*://*.facebook.com/*", "*://facebook.com/*",
+        "*://discord.com/*", "*://*.discord.com/*",
+        "*://web.telegram.org/*", "*://*.telegram.org/*",
+        "*://webogram.org/*", "*://*.webogram.org/*",
+        "*://web.telegram.im/*", "*://*.telegram.im/*",
+        "*://web.tlgrm.ru/*", "*://*.tlgrm.ru/*",
+        "*://web.tel.onl/*", "*://*.tel.onl/*"
       ],
       "js": ["inject.js"],
       "run_at": "document_start",
       "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/363bc7ce3c45ce75bd795bd0ab88d936.gif"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
