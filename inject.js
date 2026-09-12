@@ -59,6 +59,8 @@
     deEss: 0,
     bassBoost: 0,
     autoLevel: 0,
+    enabled: true,
+    themeUrl: "",
     customColor: "#7cf7ff",
     turboActive: false,
     ultraTurboActive: false,
@@ -93,6 +95,8 @@
       if (typeof parsed.deEss === "number") currentState.deEss = Math.min(100, Math.max(0, parsed.deEss));
       if (typeof parsed.bassBoost === "number") currentState.bassBoost = Math.min(100, Math.max(0, parsed.bassBoost));
       if (typeof parsed.autoLevel === "number") currentState.autoLevel = Math.min(100, Math.max(0, parsed.autoLevel));
+      if (typeof parsed.enabled === "boolean") currentState.enabled = parsed.enabled;
+      if (typeof parsed.themeUrl === "string") currentState.themeUrl = parsed.themeUrl;
       if (parsed.customColor) currentState.customColor = parsed.customColor;
 
       for (let i = 1; i <= 6; i++) {
@@ -134,6 +138,8 @@
     if (typeof config.turboActive === "boolean") currentState.turboActive = config.turboActive;
     if (typeof config.ultraTurboActive === "boolean") currentState.ultraTurboActive = config.ultraTurboActive;
     if (typeof config.muteActive === "boolean") currentState.muteActive = config.muteActive;
+    if (typeof config.enabled === "boolean") currentState.enabled = config.enabled;
+    if (typeof config.themeUrl === "string") currentState.themeUrl = config.themeUrl;
     if (typeof config.customColor === "string") currentState.customColor = config.customColor;
     saveStateToLocalStorage();
     if (window.__OmniLordPanelReady) window.__OmniLordPanelReady.applyFromState();
@@ -141,9 +147,13 @@
   }
 
   window.addEventListener("message", (event) => {
-    if (event.source !== window) return;
-    if (event.data?.source === "Omni-Universal-Lord" && event.data?.type === "OMNI_CONFIG") {
+    if (event.source !== window || event.data?.source !== "Omni-Universal-Lord") return;
+    if (event.data.type === "OMNI_CONFIG") {
       applyExternalConfig(event.data.config);
+    }
+    if (event.data.type === "OMNI_THEME" && typeof event.data.themeUrl === "string") {
+      currentState.themeUrl = event.data.themeUrl;
+      if (window.__OmniLordPanelReady) window.__OmniLordPanelReady.applyTheme(event.data.themeUrl);
     }
   });
 
@@ -358,6 +368,7 @@
       const alreadyProcessed = audioTracks.length && audioTracks.every((track) => track.__omniLordProcessed);
 
       try {
+        if (!currentState.enabled) return mediaStream;
         let audioCtx = ensureProcessingContext();
         if (!audioCtx) return mediaStream;
         if (audioCtx.state === "suspended") await audioCtx.resume();
@@ -489,6 +500,26 @@
     }
   };
 
+  const nativeReplaceTrack = window.RTCRtpSender?.prototype?.replaceTrack;
+
+  const watchedSenders = new WeakSet();
+  function watchSenderForTrackChanges(sender) {
+    if (!sender || watchedSenders.has(sender)) return;
+    watchedSenders.add(sender);
+    const check = () => {
+      const t = sender.track;
+      if (t && t.kind === "audio" && !t.__omniLordProcessed) {
+        AudioInterceptor.processTrack(t).then((processed) => {
+          if (processed && processed !== t && sender.replaceTrack) {
+            sender.replaceTrack(processed).catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    };
+    check();
+    setInterval(check, 2000);
+  }
+
   const NativePeerConnection = window.RTCPeerConnection;
   if (NativePeerConnection) {
     window.RTCPeerConnection = class extends NativePeerConnection {
@@ -512,7 +543,9 @@
         if (desc && desc.sdp) {
           try { desc = new RTCSessionDescription({ type: desc.type, sdp: forceStereoOpusSDP(desc.sdp) }); } catch (_) {}
         }
-        return super.setRemoteDescription(desc);
+        const result = await super.setRemoteDescription(desc);
+        try { this.getSenders().forEach(watchSenderForTrackChanges); } catch (_) {}
+        return result;
       }
       addTrack(track, ...streams) {
         if (track && track.kind === "audio" && !track.__omniLordProcessed) {
@@ -527,23 +560,32 @@
         return super.addTrack(track, ...streams);
       }
       addTransceiver(trackOrKind, init) {
-        if (trackOrKind && trackOrKind.kind === "audio" && !trackOrKind.__omniLordProcessed) {
+        const isAudioKind = typeof trackOrKind === "string" ? trackOrKind === "audio" : (trackOrKind && trackOrKind.kind === "audio");
+        const hasUnprocessedTrack = trackOrKind && typeof trackOrKind === "object" && trackOrKind.kind === "audio" && !trackOrKind.__omniLordProcessed;
+        if (isAudioKind || hasUnprocessedTrack) {
           const transceiver = super.addTransceiver(trackOrKind, init);
-          AudioInterceptor.processTrack(trackOrKind).then((processed) => {
-            if (processed && processed !== trackOrKind && transceiver?.sender?.replaceTrack) {
-              transceiver.sender.replaceTrack(processed).catch(() => {});
-            }
-          }).catch(() => {});
+          if (hasUnprocessedTrack) {
+            AudioInterceptor.processTrack(trackOrKind).then((processed) => {
+              if (processed && processed !== trackOrKind && transceiver?.sender?.replaceTrack) {
+                transceiver.sender.replaceTrack(processed).catch(() => {});
+              }
+            }).catch(() => {});
+          }
+          if (transceiver?.sender) watchSenderForTrackChanges(transceiver.sender);
           return transceiver;
         }
         return super.addTransceiver(trackOrKind, init);
+      }
+      setConfiguration(config) {
+        const result = super.setConfiguration(config);
+        try { this.getSenders().forEach(watchSenderForTrackChanges); } catch (_) {}
+        return result;
       }
     };
     Object.defineProperty(window.RTCPeerConnection, "name", { value: "RTCPeerConnection" });
   }
 
-  if (window.RTCRtpSender?.prototype?.replaceTrack) {
-    const nativeReplaceTrack = window.RTCRtpSender.prototype.replaceTrack;
+  if (nativeReplaceTrack) {
     window.RTCRtpSender.prototype.replaceTrack = async function (track) {
       if (track?.kind === "audio" && !track.__omniLordProcessed) {
         track = await AudioInterceptor.processTrack(track);
@@ -580,7 +622,7 @@
         stream = await origGetUserMedia(constraints);
       }
       if (requestedAudio && stream.getAudioTracks().length > 0) {
-        return await AudioInterceptor.intercept(stream);
+        return currentState.enabled ? await AudioInterceptor.intercept(stream) : stream;
       }
       return stream;
     };
@@ -592,6 +634,7 @@
     init() {
       this.injectStyles();
       this.build();
+      this.applyTheme(currentState.themeUrl);
       this.bind();
       this.enableDrag();
       this.initColorPalette();
@@ -698,6 +741,13 @@
     setStatus(text) {
       const el = document.getElementById("oul-status");
       if (el) el.textContent = text;
+    },
+
+    applyTheme(themeUrl) {
+      const panel = document.getElementById("oul-panel");
+      if (!panel || !themeUrl) return;
+      panel.style.setProperty("--theme-gif", `url("${themeUrl.replace(/"/g, "")}")`);
+      panel.classList.add("oul-themed");
     },
 
     applyCustomColor(colorHex) {
@@ -983,7 +1033,10 @@
           --accent: #7cf7ff;
           --border: rgba(124,247,255,.55);
           position: fixed; top: 20px; left: 20px; width: 328px;
-          background: linear-gradient(145deg, rgba(7, 10, 28, 0.92), rgba(21, 16, 42, 0.88));
+          background-color: rgba(7, 10, 28, 0.9);
+          background-image: linear-gradient(145deg, rgba(7, 10, 28, 0.82), rgba(21, 16, 42, 0.74)), var(--theme-gif), linear-gradient(145deg, #193149, #080B10);
+          background-size: cover;
+          background-position: center top;
           border: 1px solid var(--border);
           box-shadow: 0 24px 70px rgba(0,0,0,0.55), 0 0 28px color-mix(in srgb, var(--accent) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.14);
           border-radius: 22px; color: #fff; z-index: 9999999;
@@ -991,6 +1044,7 @@
           user-select: none; padding: 12px; backdrop-filter: blur(8px); overflow: hidden; touch-action: none;
         }
         #oul-bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        #oul-panel.oul-themed { border-color: rgba(174, 235, 255, 0.7); box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 28px rgba(124, 247, 255, 0.3), inset 0 1px 0 rgba(255,255,255,.16); }
         .oul-header, #oul-body { position: relative; z-index: 1; }
         .oul-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 10px; cursor: move; touch-action: none; }
         .oul-title { font-size: 15px; font-weight: 950; background: linear-gradient(90deg, var(--accent), #ffffff, #ff4fd8); -webkit-background-clip: text; color: transparent; letter-spacing: 1px; }
